@@ -1,16 +1,28 @@
 package com.oracle.test.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+/*
+    CREATE TABLE ADDRESS (
+        ID NUMBER NOT NULL PRIMARY KEY,
+        STREET VARCHAR(64),
+        CITY VARCHAR(64),
+        ZIP VARCHAR(16)
+    );
+*/
 @Entity
 @Table(name="ADDRESS")
 public class Address {
 
     @Id
     @Column(name="ID")
+    @GeneratedValue(strategy= GenerationType.SEQUENCE, generator="ADDRESS_SEQ")
     private long id;
     @Column(name="STREET")
     private String street;
@@ -32,6 +44,10 @@ public class Address {
         this.street = street;
         this.city = city;
         this.zip = zip;
+    }
+
+    public long getId() {
+        return id;
     }
 
     public String getStreet() {
@@ -56,6 +72,15 @@ public class Address {
 
     public void setZip(String zip) {
         this.zip = zip;
+    }
+
+    public JsonObject toJson() {
+        return Json.createObjectBuilder()
+                .add("id", id)
+                .add("street", street)
+                .add("city", city)
+                .add("zip", zip)
+                .build();
     }
 
 }

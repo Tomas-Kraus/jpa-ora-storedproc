@@ -25,12 +25,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonException;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.JsonValue;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 
 import com.oracle.it.HelidonTestException;
 import io.helidon.config.Config;
@@ -68,7 +68,7 @@ public class TestClient {
         this.webClient = webClient;
     }
 
-    WebClientRequestBuilder clientGetBuilderWithPath(final String service, final String method) {
+    public String buildPath(final String service, final String method) {
         final StringBuilder sb = new StringBuilder(service.length() + (method != null ? method.length() : 0) + 2);
         sb.append('/');
         sb.append(service);
@@ -76,7 +76,11 @@ public class TestClient {
             sb.append('/');
             sb.append(method);
         }
-        return webClient.get().path(sb.toString());
+        return sb.toString();
+    }
+
+    WebClientRequestBuilder clientGetBuilderWithPath(final String service, final String method) {
+        return webClient.get().path(buildPath(service, method));
     }
 
     private static String encode(final String str) {
@@ -129,7 +133,7 @@ public class TestClient {
         return evaluateServiceCallResult(
                 callService(
                         clientGetBuilderWithPath(service, method),
-                        params));
+                        params).asJsonObject());
     }
 
     /**
@@ -156,7 +160,7 @@ public class TestClient {
     public JsonObject callServiceAndGetRawData(final String service, final String method, final Map<String, String> params) {
         WebClientRequestBuilder rb = clientGetBuilderWithPath(service, method);
         rb.headers().add("Accept", "application/json");
-        return callService(rb, params);
+        return callService(rb, params).asJsonObject();
     }
 
     /**
@@ -197,7 +201,7 @@ public class TestClient {
         return webClient;
     }
 
-    JsonObject callService(WebClientRequestBuilder rb, Map<String, String> params) {
+    JsonValue callService(WebClientRequestBuilder rb, Map<String, String> params) {
         if (params != null && !params.isEmpty()) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 rb = rb.queryParam(entry.getKey(), encode(entry.getValue()));
@@ -216,6 +220,8 @@ public class TestClient {
             switch (jsonContent.getValueType()) {
                 case OBJECT:
                     return jsonContent.asJsonObject();
+                case ARRAY:
+                    return jsonContent.asJsonArray();
                 default:
                     throw new HelidonTestException(
                             String.format(

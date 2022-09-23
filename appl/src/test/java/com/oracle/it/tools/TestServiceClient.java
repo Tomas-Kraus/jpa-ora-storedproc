@@ -23,8 +23,8 @@ import io.helidon.media.common.MessageBodyReadableContent;
 import io.helidon.webclient.WebClient;
 import io.helidon.webclient.WebClientRequestBuilder;
 
-import javax.json.JsonObject;
-import javax.json.JsonValue;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 
 /**
  * Web client to access specific service of remote test application.
@@ -41,6 +41,10 @@ public class TestServiceClient extends TestClient {
         this.service = service;
     }
 
+    public String buildPath(final String method) {
+        return buildPath(service, method);
+    }
+
     /**
      * Call remote test service method and return its data.
      * Using service name provided to test web client builder.
@@ -53,7 +57,7 @@ public class TestServiceClient extends TestClient {
         return evaluateServiceCallResult(
                 callService(
                         clientGetBuilderWithPath(service, method),
-                        params));
+                        params).asJsonObject());
     }
 
     /**
@@ -76,7 +80,7 @@ public class TestServiceClient extends TestClient {
      * @param params remote test method query parameters
      * @return data returned by remote service
      */
-    public JsonObject callServiceAndGetRawData(final String method, final Map<String, String> params) {
+    public JsonValue callServiceAndGetRawData(final String method, final Map<String, String> params) {
         WebClientRequestBuilder rb = clientGetBuilderWithPath(service, method);
         rb.headers().add("Accept", "application/json");
         return callService(rb, params);

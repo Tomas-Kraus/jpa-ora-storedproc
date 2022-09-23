@@ -1,6 +1,7 @@
 package com.oracle.test;
 
 import com.oracle.test.service.ExitService;
+import com.oracle.test.service.TestService;
 import io.helidon.common.LogConfig;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
@@ -9,8 +10,12 @@ import io.helidon.media.jsonp.JsonpSupport;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.WebServer;
 
+import java.io.File;
 import java.io.ObjectInputFilter;
 import java.util.logging.Logger;
+
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class TestMain {
 
@@ -22,14 +27,18 @@ public class TestMain {
 
         final Config config = Config.create(ConfigSources.classpath(configFile));
 
+        final EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugdb");
+
+        final TestService testService = new TestService(emf.createEntityManager());
         final ExitService exitService = new ExitService();
 
         final Routing routing = Routing.builder()
+                .register("/Test", testService)
                 .register("/Exit", exitService)
                 .build();
 
-        final WebServer.Builder serverBuilder = WebServer.builder()
-                .routing(routing)
+        final WebServer.Builder serverBuilder = WebServer.builder(routing)
+                .port(config.get("server.port").as(Integer.class).get())
                 // Get webserver config from the "server" section of configuration file
                 .config(config.get("server"));
 

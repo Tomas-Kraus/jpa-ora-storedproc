@@ -1,13 +1,30 @@
 package com.oracle.test.model;
 
-import javax.persistence.*;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+/*
+    CREATE TABLE PERSON (
+        ID NUMBER NOT NULL PRIMARY KEY,
+        FIRST_NAME VARCHAR(64),
+        LAST_NAME VARCHAR(64),
+        BIRTH_DATE DATE,
+        ADDRESS_ID NUMBER REFERENCES ADDRESS(ID)
+    );
+ */
 
 @NamedNativeQueries({
         @NamedNativeQuery(
-                name="PersonNameByZIP",
-                query="SELECT P.FIRST_NAME AS FIRST_NAME, P.LAST_NAME AS LAST_NAME FROM PERSON P, ADDRESS A WHERE P.ADDRESS_ID = ADDRESS.ID AND A.ZIP = ?",
+                name="PersonNameByZIPIndexArg",
+                query="SELECT P.FIRST_NAME AS FIRST_NAME, P.LAST_NAME AS LAST_NAME FROM PERSON P, ADDRESS A WHERE P.ADDRESS_ID = A.ID AND A.ZIP = ?",
+                resultSetMapping="PersonNameByZIPToPerson"),
+        @NamedNativeQuery(
+                name="PersonNameByZIPNameArg",
+                query="SELECT P.FIRST_NAME AS FIRST_NAME, P.LAST_NAME AS LAST_NAME FROM PERSON P, ADDRESS A WHERE P.ADDRESS_ID = A.ID AND A.ZIP = :zip",
                 resultSetMapping="PersonNameByZIPToPerson")
 })
 @SqlResultSetMapping(
@@ -107,4 +124,23 @@ public class Person {
     public void setAddress(Address address) {
         this.address = address;
     }
+
+    public JsonObject toJson() {
+        JsonObjectBuilder job = Json.createObjectBuilder()
+                .add("id", id)
+                .add("firstName", firstName)
+                .add("lastName", lastName);
+        if (birthDate != null) {
+            job.add("birthDate", birthDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        } else {
+            job.addNull("birthDate");
+        }
+        if (address != null) {
+            job.add("address", address.toJson());
+        } else {
+            job.addNull("address");
+        }
+        return job.build();
+    }
+
 }

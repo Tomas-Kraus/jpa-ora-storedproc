@@ -39,6 +39,7 @@ public class InitDb {
             try {
                 Connection conn = DriverManager.getConnection(dbUrl, properties);
                 closeConnection(conn);
+                System.out.println(" - Database connection check passed");
                 break;
             } catch (Exception ex) {
                 //System.out.println(String.format("Connection check: %s", ex.getMessage()));
@@ -61,21 +62,27 @@ public class InitDb {
             conn = DriverManager.getConnection(dbUrl, properties);
             stmt = conn.createStatement();
             while (true) {
-                ResultSet rs = stmt.executeQuery(String.format("SELECT TABLESPACE_NAME FROM DBA_TABLESPACES WHERE TABLESPACE_NAME='USERS'", dbUser));
-                if (rs.next()) {
-                    String tablespace = rs.getString(1);
-                    if ("users".equalsIgnoreCase(tablespace)) {
-                        System.out.println(" - Tablespace users was found.");
-                        break;
+                ResultSet rs = null;
+                try {
+                    rs = stmt.executeQuery(String.format("SELECT TABLESPACE_NAME FROM DBA_TABLESPACES WHERE TABLESPACE_NAME='USERS'", dbUser));
+                    if (rs.next()) {
+                        String tablespace = rs.getString(1);
+                        if ("users".equalsIgnoreCase(tablespace)) {
+                            System.out.println(" - Tablespace users was found.");
+                            break;
+                        }
                     }
-                } else {
-                    try {
-                        Thread.sleep(SLEEP_MILIS);
-                    } catch (InterruptedException ie) {
-                        System.out.println(String.format("Connection check: Thread was interrupted: %s", ie.getMessage()));
+                } catch (SQLException ex) {
+                } finally {
+                    if (rs != null) {
+                        rs.close();
                     }
                 }
-                rs.close();
+                try {
+                    Thread.sleep(SLEEP_MILIS);
+                } catch (InterruptedException ie) {
+                    System.out.println(String.format("Connection check: Thread was interrupted: %s", ie.getMessage()));
+                }
             }
         } catch (Exception ex) {
             System.out.println(String.format(" - Database tablespace check failed: %s", ex.getMessage()));
@@ -159,7 +166,7 @@ public class InitDb {
         final String dbSysPw = args.length > 1 ? args[1] : null;
         final String dbUrl = args.length > 2 ? args[2] : null;
         final String dbUser =  args.length > 3 ? args[3] : null;
-        final String dbPassword =  args.length > 3 ? args[3] : null;
+        final String dbPassword =  args.length > 4 ? args[4] : null;
         waitForDatabase(dbSysUser, dbSysPw, dbUrl);
         initDatabase(dbSysUser, dbSysPw, dbUrl, dbUser, dbPassword);
     }
