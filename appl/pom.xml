@@ -282,6 +282,7 @@
                 <db.url>jdbc:oracle:thin:@localhost:${db.port}/${db.pdb}</db.url>
                 <db.driver>oracle.jdbc.OracleDriver</db.driver>
                 <db.hibernate.dialect>org.hibernate.dialect.Oracle12cDialect</db.hibernate.dialect>
+                <db.docker.image>use image from https://github.com/oracle/docker-images/tree/main/OracleDatabase</db.docker.image>
             </properties>
             <dependencies>
                 <dependency>
@@ -309,7 +310,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>eclipselink.uk.oracle.com/infra/oradb21c:21.3.0-ee</name>
+                                    <name>${db.docker.image}</name>
                                     <alias>oracle</alias>
                                     <run>
                                         <env>
