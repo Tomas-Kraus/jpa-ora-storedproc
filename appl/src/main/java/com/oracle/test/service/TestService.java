@@ -11,6 +11,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonValue;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceException;
 
@@ -30,12 +31,12 @@ public class TestService implements Service {
     private static final String GET_ADDRESS_BY_NAME_FILE = "GET_ADDRESS_BY_NAME.sql";
     private static final String GET_ADDRESS_BY_ZIP_FILE = "GET_ADDRESS_BY_ZIP.sql";
 
-    private final EntityManager em;
+    private final EntityManagerFactory emf;
     private final PersonDao pd;
 
-    public TestService(EntityManager em) {
-        this.em = em;
-        this.pd = new PersonDao(em);
+    public TestService(EntityManagerFactory emf) {
+        this.emf = emf;
+        this.pd = new PersonDao(emf);
     }
 
     @Override
@@ -51,6 +52,7 @@ public class TestService implements Service {
     }
 
     private void executeFile(String filePath) {
+        EntityManager em = emf.createEntityManager();
         EntityTransaction et = em.getTransaction();
         try (InputStream is = new FileInputStream(filePath)) {
             String statement = new String(is.readAllBytes(), StandardCharsets.US_ASCII);
@@ -62,6 +64,8 @@ public class TestService implements Service {
         } catch (IOException ex) {
             et.rollback();
             throw new RuntimeException(ex);
+        } finally {
+            em.close();
         }
     }
 
@@ -85,13 +89,18 @@ public class TestService implements Service {
         CompletableFuture.supplyAsync(
                         () -> {
                             String statement = "DROP PROCEDURE GET_ADDRESS_BY_NAME";
-                            EntityTransaction et = em.getTransaction();
-                            et.begin();
-                            int result = em.createNativeQuery(statement).executeUpdate();
-                            em.flush();
-                            et.commit();
-                            System.out.println("[Test:APPL] cleanup result: " + result);
-                            return null;
+                            EntityManager em = emf.createEntityManager();
+                            try {
+                                EntityTransaction et = em.getTransaction();
+                                et.begin();
+                                int result = em.createNativeQuery(statement).executeUpdate();
+                                em.flush();
+                                et.commit();
+                                System.out.println("[Test:APPL] cleanup result: " + result);
+                                return null;
+                            } finally {
+                                em.close();
+                            }
                         })
                 .thenApply(x -> response.send())
                 .exceptionally(t -> {
@@ -104,6 +113,7 @@ public class TestService implements Service {
         System.out.println("[Test:APPL] createAddress REQUEST: " + address.toJson().toString());
         CompletableFuture.supplyAsync(
                 () -> {
+                    EntityManager em = emf.createEntityManager();
                     EntityTransaction et = em.getTransaction();
                     et.begin();
                     try {
@@ -114,6 +124,8 @@ public class TestService implements Service {
                     } catch (PersistenceException ex) {
                         et.rollback();
                         throw ex;
+                    } finally {
+                        em.close();
                     }
                     return null;
                 })

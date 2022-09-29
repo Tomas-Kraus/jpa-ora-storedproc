@@ -282,7 +282,7 @@
                 <db.url>jdbc:oracle:thin:@localhost:${db.port}/${db.pdb}</db.url>
                 <db.driver>oracle.jdbc.OracleDriver</db.driver>
                 <db.hibernate.dialect>org.hibernate.dialect.Oracle12cDialect</db.hibernate.dialect>
-                <db.docker.image>use image from https://github.com/oracle/docker-images/tree/main/OracleDatabase</db.docker.image>
+                <db.docker.image>eclipselink.uk.oracle.com/infra/oradb21c:21.3.0-ee</db.docker.image>
             </properties>
             <dependencies>
                 <dependency>
@@ -356,13 +356,13 @@
                                     <goal>start</goal>
                                 </goals>
                             </execution>
-                            <execution>
+                            <!--execution>
                                 <id>stop</id>
                                 <phase>post-integration-test</phase>
                                 <goals>
                                     <goal>stop</goal>
                                 </goals>
-                            </execution>
+                            </execution-->
                         </executions>
                     </plugin>
                     <plugin>

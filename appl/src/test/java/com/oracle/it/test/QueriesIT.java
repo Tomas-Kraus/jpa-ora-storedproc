@@ -3,6 +3,9 @@ package com.oracle.it.test;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -17,6 +20,7 @@ import io.helidon.media.common.MessageBodyReadableContent;
 import io.helidon.webclient.WebClientRequestBuilder;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -88,8 +92,12 @@ public class QueriesIT {
         Map<String, String> params =new HashMap<>(2);
         params.put("firstName", "John");
         params.put("lastName", "Smith");
-        JsonArray value = testClient.callServiceAndGetRawData("listAddressesForName", params).asJsonArray();
-        MatcherAssert.assertThat(1, Matchers.equalTo(value.size()));
+        try {
+            JsonArray value = testClient.callServiceAndGetRawData("listAddressesForName", params).asJsonArray();
+            MatcherAssert.assertThat(1, Matchers.equalTo(value.size()));
+        } catch (Exception e) {
+            Assertions.fail(e.getCause().getMessage());
+        }
     }
 
     @Test
@@ -120,6 +128,35 @@ public class QueriesIT {
         params.put("zip", "23456");
         JsonArray value = testClient.callServiceAndGetRawData("listPersonByZipIndexArg", params).asJsonArray();
         MatcherAssert.assertThat(1, Matchers.equalTo(value.size()));
+    }
+
+    @Test
+    @Order(7) void testClosedConnection() {
+        Runnable[] tasks = {
+                this::listAddressesForName,
+                this::listPersonByZipIndexArg,
+                this::listAddressByZipStoredProc,
+                this::listPersonByZipIndexArg
+        };
+        ThreadPoolExecutor es = new ThreadPoolExecutor(
+                16, 128, 5, TimeUnit.SECONDS, new ArrayBlockingQueue<>(128));
+        int index = 0;
+        int totalTime = 1200000;
+        long stopTime = System.currentTimeMillis() + totalTime;
+        long count = 0;
+        while (System.currentTimeMillis() < stopTime) {
+            count ++;
+            while (es.getPoolSize() < 64) {
+                es.execute(tasks[index]);
+                index = (index + 1) % 4;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Requests done: " + count);
     }
 
 }

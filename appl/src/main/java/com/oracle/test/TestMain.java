@@ -29,7 +29,7 @@ public class TestMain {
 
         final EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugdb");
 
-        final TestService testService = new TestService(emf.createEntityManager());
+        final TestService testService = new TestService(emf);
         final ExitService exitService = new ExitService();
 
         final Routing routing = Routing.builder()
